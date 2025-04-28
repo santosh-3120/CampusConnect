@@ -4,7 +4,7 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
-// YaswanthD Beds Choclate
+// YaswanthD
 
 function App() {
   const [count, setCount] = useState(0)
