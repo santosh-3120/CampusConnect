@@ -1,141 +1,160 @@
-import { useContext } from 'react';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { useParams, useNavigate } from 'react-router-dom';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
+import InputField from '../components/common/InputField';
+import Textarea from '../components/common/Textarea';
+import Select from '../components/common/Select';
 import FileInput from '../components/common/FileInput';
 import Button from '../components/common/Button';
-import { SocketContext } from '../context/SocketContext.jsx';
-const validationSchema = Yup.object({
-  itemName: Yup.string().required('Item name is required'),
-  description: Yup.string().required('Description is required'),
-  location: Yup.string().required('Location is required'),
-  status: Yup.string().oneOf(['lost', 'found']).required('Status is required'),
-  date: Yup.date().required('Date is required').max(new Date(), 'Date cannot be in the future'),
-  handoverTo: Yup.string().required('Handover person is required'),
-  handoverLocation: Yup.string().required('Handover location is required'),
-  image: Yup.mixed()
-    .required('Image is required')
-    .test('fileSize', 'File too large', (value) => value && value.size <= 5 * 1024 * 1024)
-    .test('fileType', 'Unsupported file type', (value) =>
-      value && ['image/jpeg', 'image/png'].includes(value.type)
-    ),
-});
+import Toast from '../components/common/Toast';
+import { useLostFoundItem, createItem, updateItem } from '../features/lostAndFound/lostFoundHooks';
 
-function CreateLostFound() {
+const CreateLostFound = () => {
+  const { user, logout } = useContext(AuthContext);
+  const { id } = useParams();
   const navigate = useNavigate();
-  const socket = useContext(SocketContext);
+  const isEdit = !!id;
+  const { item, loading } = useLostFoundItem(id);
+  const [formData, setFormData] = useState({
+    itemName: '',
+    description: '',
+    location: '',
+    status: 'lost',
+    date: '',
+    handoverTo: '',
+    handoverLocation: '',
+    image: null,
+  });
+  const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (isEdit && item) {
+      setFormData({
+        itemName: item.itemName,
+        description: item.description || '',
+        location: item.location,
+        status: item.status,
+        date: new Date(item.date).toISOString().slice(0, 16),
+        handoverTo: item.handoverTo || '',
+        handoverLocation: item.handoverLocation || '',
+        image: null,
+      });
+    }
+  }, [item, isEdit]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    setFormData((prev) => ({ ...prev, image: e.target.files[0] }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (isEdit) {
+        await updateItem(id, formData);
+        setToast({ message: 'Item updated successfully', type: 'success' });
+        navigate(`/lost-and-found/${id}`);
+      } else {
+        await createItem(formData);
+        setToast({ message: 'Item created successfully', type: 'success' });
+        navigate('/lost-and-found');
+      }
+    } catch (err) {
+      setError(err.message || `Failed to ${isEdit ? 'update' : 'create'} item`);
+      setToast({ message: err.message || `Failed to ${isEdit ? 'update' : 'create'} item`, type: 'error' });
+    }
+  };
+
+  if (isEdit && loading) return <div className="min-h-screen bg-blue-50 flex items-center justify-center">Loading...</div>;
 
   return (
-    <div className="container mx-auto p-6 bg-white shadow-lg rounded-lg min-h-screen">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Create Lost & Found Post</h1>
-      <Formik
-        initialValues={{
-          itemName: '',
-          description: '',
-          location: '',
-          status: 'lost',
-          date: '',
-          handoverTo: '',
-          handoverLocation: '',
-          image: null,
-        }}
-        validationSchema={validationSchema}
-        onSubmit={(values, { setSubmitting }) => {
-          // Mock API call
-          // const formData = new FormData();
-          // Object.keys(values).forEach((key) => formData.append(key, values[key]));
-          // Axios.post('/api/lost-found', formData).then((res) => {
-          const newPost = {
-            _id: Date.now().toString(),
-            ...values,
-            image: '/assets/placeholder.jpg', // Mock image URL
-            isClaimed: false,
-          };
-          socket.emit('newLostFoundPost', newPost);
-          setSubmitting(false);
-          navigate('/lost-and-found');
-          // });
-        }}
-      >
-        {({ isSubmitting }) => (
-          <Form className="space-y-6 max-w-lg mx-auto">
-            <div>
-              <Field
-                name="itemName"
-                placeholder="Item Name (e.g., Wallet)"
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <ErrorMessage name="itemName" component="p" className="text-red-500 text-sm mt-1" />
-            </div>
-            <div>
-              <Field
-                as="textarea"
-                name="description"
-                placeholder="Description"
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                rows="4"
-              />
-              <ErrorMessage name="description" component="p" className="text-red-500 text-sm mt-1" />
-            </div>
-            <div>
-              <Field
-                name="location"
-                placeholder="Location (e.g., Library)"
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <ErrorMessage name="location" component="p" className="text-red-500 text-sm mt-1" />
-            </div>
-            <div>
-              <Field
-                as="select"
-                name="status"
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="lost">Lost</option>
-                <option value="found">Found</option>
-              </Field>
-              <ErrorMessage name="status" component="p" className="text-red-500 text-sm mt-1" />
-            </div>
-            <div>
-              <Field
-                name="date"
-                type="date"
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <ErrorMessage name="date" component="p" className="text-red-500 text-sm mt-1" />
-            </div>
-            <div>
-              <Field
-                name="handoverTo"
-                placeholder="Handover to (e.g., Prof. Smith)"
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <ErrorMessage name="handoverTo" component="p" className="text-red-500 text-sm mt-1" />
-            </div>
-            <div>
-              <Field
-                name="handoverLocation"
-                placeholder="Handover Location (e.g., Office Room 101)"
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <ErrorMessage name="handoverLocation" component="p" className="text-red-500 text-sm mt-1" />
-            </div>
-            <div>
-              <FileInput name="image" />
-              <ErrorMessage name="image" component="p" className="text-red-500 text-sm mt-1" />
-            </div>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-            >
-              {isSubmitting ? 'Submitting...' : 'Create Post'}
-            </Button>
-          </Form>
-        )}
-      </Formik>
+    <div className="min-h-screen bg-blue-50 font-sans flex flex-col">
+      <Navbar user={user} logout={logout} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
+        <h2 className="text-3xl font-bold text-gray-900 mb-6">{isEdit ? 'Edit Item' : 'Post a Lost or Found Item'}</h2>
+        {error && <Toast message={error} type="error" onClose={() => setToast(null)} />}
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6 max-w-lg mx-auto">
+          <InputField
+            label="Item Name"
+            id="itemName"
+            name="itemName"
+            value={formData.itemName}
+            onChange={handleChange}
+            required
+          />
+          <Textarea
+            label="Description"
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={4}
+          />
+          <InputField
+            label="Location"
+            id="location"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            required
+          />
+          <Select
+            label="Status"
+            id="status"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            options={[
+              { value: 'lost', label: 'Lost' },
+              { value: 'found', label: 'Found' },
+            ]}
+          />
+          <InputField
+            label="Date"
+            id="date"
+            name="date"
+            type="datetime-local"
+            value={formData.date}
+            onChange={handleChange}
+            required
+          />
+          <InputField
+            label="Handover To (if found)"
+            id="handoverTo"
+            name="handoverTo"
+            value={formData.handoverTo}
+            onChange={handleChange}
+          />
+          <InputField
+            label="Handover Location (if found)"
+            id="handoverLocation"
+            name="handoverLocation"
+            value={formData.handoverLocation}
+            onChange={handleChange}
+          />
+          <FileInput
+            label="Image"
+            id="image"
+            name="image"
+            onChange={handleImageChange}
+            accept="image/*"
+          />
+          <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
+            {isEdit ? 'Update Item' : 'Post Item'}
+          </Button>
+        </form>
+      </div>
+      <Footer />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
-}
+};
 
 export default CreateLostFound;

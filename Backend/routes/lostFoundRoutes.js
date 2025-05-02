@@ -1,14 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const { getAllPosts, createPost, getPostById, claimPost, addComment, flagPost } = require('../controllers/lostFoundController');
+const {
+  createLostFoundItem,
+  getLostFoundItems,
+  getLostFoundItem,
+  claimLostFoundItem,
+  addComment,
+  flagLostFoundItem,
+} = require('../controllers/lostFoundController');
 const authMiddleware = require('../middleware/authMiddleware');
-const uploadMiddleware = require('../middleware/uploadMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 
-router.get('/', getAllPosts);
-router.post('/', authMiddleware, uploadMiddleware.single('image'), createPost);
-router.get('/:id', getPostById);
-router.post('/:id/claim', authMiddleware, claimPost);
+router.post('/', authMiddleware, upload.single('image'), createLostFoundItem);
+router.get('/', getLostFoundItems);
+router.get('/:id', getLostFoundItem);
+router.post('/:id/claim', authMiddleware, claimLostFoundItem);
 router.post('/:id/comment', authMiddleware, addComment);
-router.post('/:id/flag', authMiddleware, flagPost);
+router.post('/:id/flag', authMiddleware, flagLostFoundItem);
 
 module.exports = router;

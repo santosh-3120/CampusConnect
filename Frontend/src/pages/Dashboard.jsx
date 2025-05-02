@@ -1,5 +1,6 @@
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import reactLogo from '../assets/react.svg';
 import viteLogo from '/vite.svg';
 
@@ -17,6 +18,12 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">Welcome, {user.name} ({user.role})</span>
+              <Link
+                to="/inbox"
+                className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Inbox
+              </Link>
               <button
                 onClick={logout}
                 className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium"
@@ -48,7 +55,6 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Explore Our Features</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Event Hub Card */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105">
               <div className="h-48 bg-green-100 flex items-center justify-center">
                 <img src={viteLogo} className="w-16 h-16" alt="Vite logo" />
@@ -59,8 +65,6 @@ const Dashboard = () => {
                 <a href="/events" className="text-green-600 font-medium hover:underline">Learn More →</a>
               </div>
             </div>
-
-            {/* Marketplace Card */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105">
               <div className="h-48 bg-teal-100 flex items-center justify-center">
                 <img src={reactLogo} className="w-16 h-16" alt="React logo" />
@@ -71,8 +75,6 @@ const Dashboard = () => {
                 <a href="/marketplace" className="text-teal-600 font-medium hover:underline">Learn More →</a>
               </div>
             </div>
-
-            {/* Lost & Found Card */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105">
               <div className="h-48 bg-blue-100 flex items-center justify-center">
                 <svg className="w-16 h-16 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,11 +84,9 @@ const Dashboard = () => {
               <div className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Lost & Found</h3>
                 <p className="text-gray-600 mb-4">Report or find lost items around campus with ease.</p>
-                <a href="/lost-and-found" className="text-blue-600 font-medium hover:underline">Learn More →</a>
+                <Link to="/lost-and-found" className="text-blue-600 font-medium hover:underline">Learn More →</Link>
               </div>
             </div>
-
-            {/* Clubs Card */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105">
               <div className="h-48 bg-green-100 flex items-center justify-center">
                 <svg className="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,8 +99,6 @@ const Dashboard = () => {
                 <a href="/clubs" className="text-green-600 font-medium hover:underline">Learn More →</a>
               </div>
             </div>
-
-            {/* Forum Card */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105">
               <div className="h-48 bg-yellow-100 flex items-center justify-center">
                 <svg className="w-16 h-16 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,8 +111,6 @@ const Dashboard = () => {
                 <a href="/forum" className="text-yellow-600 font-medium hover:underline">Learn More →</a>
               </div>
             </div>
-
-            {/* Dashboard Card */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105">
               <div className="h-48 bg-red-100 flex items-center justify-center">
                 <svg className="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

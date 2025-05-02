@@ -1,66 +1,58 @@
-import { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext.jsx';
+import { useState, useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
+import Textarea from '../common/Textarea';
+import Button from '../common/Button';
+import { addComment } from '../../features/lostAndFound/lostFoundHooks';
+import { formatDate } from '../../utils/formatDate';
 
-function CommentSection({ postId }) {
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState('');
+const CommentSection = ({ itemId, comments, refetch, setToast }) => {
   const { user } = useContext(AuthContext);
+  const [comment, setComment] = useState('');
 
-  useEffect(() => {
-    // Mock fetch comments
-    // Axios.get(`/api/lost-found/${postId}/comments`).then(res => setComments(res.data));
-    setComments([
-      { _id: '1', text: 'I saw this wallet near the library!', createdBy: { name: 'John Doe' }, createdAt: '2025-04-28T10:00:00Z' },
-    ]);
-  }, [postId]);
-
-  const handleAddComment = () => {
-    if (newComment.trim()) {
-      const comment = {
-        _id: Date.now().toString(),
-        text: newComment,
-        createdBy: { name: user.name },
-        createdAt: new Date().toISOString(),
-      };
-      // Mock post comment
-      // Axios.post(`/api/lost-found/${postId}/comment`, { text: newComment });
-      setComments((prev) => [...prev, comment]);
-      setNewComment('');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!comment.trim()) return;
+    try {
+      await addComment(itemId, comment);
+      setToast({ message: 'Comment added successfully', type: 'success' });
+      setComment('');
+      refetch();
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to add comment', type: 'error' });
     }
   };
 
   return (
-    <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">Comments</h2>
+    <div className="mt-6">
+      <h3 className="text-xl font-semibold text-gray-900 mb-4">Comments</h3>
+      <form onSubmit={handleSubmit} className="mb-4">
+        <Textarea
+          label="Add a comment"
+          id="comment"
+          name="comment"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Add a comment..."
+          rows={3}
+        />
+        <Button type="submit" className="mt-2 bg-green-600 hover:bg-green-700">
+          Post Comment
+        </Button>
+      </form>
       {comments.length === 0 ? (
-        <p className="text-gray-500">No comments yet.</p>
+        <p className="text-gray-600">No comments yet.</p>
       ) : (
-        comments.map((comment) => (
-          <div key={comment._id} className="mb-4 border-b pb-2">
-            <p className="text-gray-600">
-              <strong>{comment.createdBy.name}</strong>: {comment.text}
+        comments.map((c, index) => (
+          <div key={index} className="mb-4 p-3 bg-gray-100 rounded-lg">
+            <p className="text-gray-800">{c.text}</p>
+            <p className="text-sm text-gray-600">
+              By {c.userId.name} on {formatDate(c.createdAt)}
             </p>
-            <p className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleString()}</p>
           </div>
         ))
       )}
-      <div className="mt-4 flex">
-        <input
-          type="text"
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Add a comment..."
-          className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-        />
-        <Button
-          onClick={handleAddComment}
-          className="ml-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          Post
-        </Button>
-      </div>
     </div>
   );
-}
+};
 
 export default CommentSection;

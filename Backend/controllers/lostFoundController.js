@@ -1,142 +1,171 @@
+// controllers/lostFoundController.js
 const LostFoundItem = require('../models/LostFoundItem');
+const Notification = require('../models/Notification');
 const { uploadToCloudinary } = require('../utils/cloudinary');
-const { emitNewLostFoundPost } = require('../utils/socketHandler');
 
-const getAllPosts = async (req, res) => {
-  try {
-    const { status, sort } = req.query;
-    let query = {};
-    if (status) query.status = status;
-    
-    const posts = await LostFoundItem.find(query)
-      .populate('createdBy', 'name rollNo')
-      .populate('claimant.userId', 'name rollNo')
-      .sort(sort === 'recent' ? '-createdAt' : 'createdAt');
-    
-    res.status(200).json(posts);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-const createPost = async (req, res) => {
+exports.createLostFoundItem = async (req, res) => {
   try {
     const { itemName, description, location, status, date, handoverTo, handoverLocation } = req.body;
-    const image = req.file;
+    if (!itemName || !description || !location || !status || !date) {
+      return res.status(400).json({ message: 'Required fields are missing' });
+    }
 
-    if (!image) return res.status(400).json({ message: 'Image is required' });
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
 
-    const imageUrl = await uploadToCloudinary(image.buffer);
-    
-    const post = new LostFoundItem({
-      itemName,
-      description,
+    let imageUrl = '';
+    if (req.file) {
+      imageUrl = await uploadToCloudinary(req.file.buffer, 'lost-found');
+    }
+
+    const item = new LostFoundItem({
+      itemName: itemName.trim(),
+      description: description.trim(),
       image: imageUrl,
-      location,
+      location: location.trim(),
       status,
-      date,
-      handoverTo,
-      handoverLocation,
-      createdBy: req.user._id,
+      date: parsedDate,
+      handoverTo: handoverTo ? handoverTo.trim() : '',
+      handoverLocation: handoverLocation ? handoverLocation.trim() : '',
+      createdBy: {
+        _id: req.user._id,
+        name: req.user.name,
+        rollNo: req.user.rollNo,
+      },
     });
 
-    await post.save();
-    
-    const populatedPost = await LostFoundItem.findById(post._id)
-      .populate('createdBy', 'name rollNo');
-    
-    emitNewLostFoundPost(populatedPost);
-    
-    res.status(201).json(populatedPost);
+    await item.save();
+
+    const notification = new Notification({
+      message: `New ${status} item posted: ${itemName}`,
+      type: 'info',
+      relatedId: item._id,
+      recipients: [],
+    });
+    await notification.save();
+
+    const io = req.app.get('io');
+    io.emit('notification', notification);
+
+    res.status(201).json(item);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Error creating item', error: error.message });
   }
 };
 
-const getPostById = async (req, res) => {
+exports.getLostFoundItems = async (req, res) => {
   try {
-    const post = await LostFoundItem.findById(req.params.id)
-      .populate('createdBy', 'name rollNo')
-      .populate('claimant.userId', 'name rollNo')
-      .populate('comments.createdBy', 'name');
-    
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    
-    res.status(200).json(post);
+    const { status, sort } = req.query;
+    const query = status ? { status } : {};
+    const sortOption = sort === 'recent' ? { createdAt: -1 } : {};
+    const items = await LostFoundItem.find(query).sort(sortOption);
+    res.status(200).json(items);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Error fetching items', error: error.message });
   }
 };
 
-const claimPost = async (req, res) => {
+exports.getLostFoundItem = async (req, res) => {
   try {
-    const post = await LostFoundItem.findById(req.params.id);
-    
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    if (post.isClaimed) return res.status(400).json({ message: 'Item already claimed' });
-    
-    post.isClaimed = true;
-    post.claimant = {
+    const item = await LostFoundItem.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+    res.status(200).json(item);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching item', error: error.message });
+  }
+};
+
+exports.claimLostFoundItem = async (req, res) => {
+  try {
+    const item = await LostFoundItem.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+    if (item.isClaimed) return res.status(400).json({ message: 'Item already claimed' });
+
+    item.isClaimed = true;
+    item.claimant = {
       userId: req.user._id,
       name: req.user.name,
       rollNo: req.user.rollNo,
     };
-    
-    await post.save();
-    
-    const populatedPost = await LostFoundItem.findById(post._id)
-      .populate('createdBy', 'name rollNo')
-      .populate('claimant.userId', 'name rollNo');
-    
-    res.status(200).json(populatedPost);
+
+    await item.save();
+
+    const notification = new Notification({
+      message: `${req.user.name} claimed ${item.itemName}`,
+      type: 'info',
+      relatedId: item._id,
+      recipients: [item.createdBy._id],
+    });
+    await notification.save();
+
+    const io = req.app.get('io');
+    io.to(item.createdBy._id.toString()).emit('notification', notification);
+
+    res.status(200).json(item);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Error claiming item', error: error.message });
   }
 };
 
-const addComment = async (req, res) => {
+exports.addComment = async (req, res) => {
   try {
     const { text } = req.body;
-    const post = await LostFoundItem.findById(req.params.id);
-    
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    
-    post.comments.push({
-      text,
-      createdBy: req.user._id,
+    if (!text) return res.status(400).json({ message: 'Comment text is required' });
+
+    const item = await LostFoundItem.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+
+    item.comments.push({
+      text: text.trim(),
+      createdBy: {
+        _id: req.user._id,
+        name: req.user.name,
+      },
     });
-    
-    await post.save();
-    
-    const updatedPost = await LostFoundItem.findById(post._id)
-      .populate('comments.createdBy', 'name');
-    
-    res.status(201).json(updatedPost);
+
+    await item.save();
+
+    const notification = new Notification({
+      message: `${req.user.name} commented on ${item.itemName}`,
+      type: 'info',
+      relatedId: item._id,
+      recipients: [item.createdBy._id],
+    });
+    await notification.save();
+
+    const io = req.app.get('io');
+    io.to(item.createdBy._id.toString()).emit('notification', notification);
+
+    res.status(201).json(item);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Error adding comment', error: error.message });
   }
 };
 
-const flagPost = async (req, res) => {
+exports.flagLostFoundItem = async (req, res) => {
   try {
-    const post = await LostFoundItem.findById(req.params.id);
-    
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    
-    post.isFlagged = true;
-    await post.save();
-    
+    const item = await LostFoundItem.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+    if (item.isFlagged) return res.status(400).json({ message: 'Item already flagged' });
+
+    item.isFlagged = true;
+    await item.save();
+
+    const notification = new Notification({
+      message: `${item.itemName} has been flagged`,
+      type: 'warning',
+      relatedId: item._id,
+      recipients: [], // Add admin IDs if needed
+    });
+    await notification.save();
+
+    const io = req.app.get('io');
+    io.emit('notification', notification);
+
     res.status(200).json({ message: 'Post flagged successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Error flagging item', error: error.message });
   }
-};
-
-module.exports = {
-  getAllPosts,
-  createPost,
-  getPostById,
-  claimPost,
-  addComment,
-  flagPost,
 };

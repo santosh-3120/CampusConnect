@@ -1,25 +1,35 @@
+const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
-const { emitNotification } = require('../utils/socketHandler');
 
-const createNotification = async (req, res) => {
+exports.createNotification = async (req, res) => {
   try {
-    const { message, type, relatedId } = req.body;
-    
+    const { message, type, relatedId, recipients } = req.body;
+
     const notification = new Notification({
       message,
       type,
-      relatedId,
-      recipients: [], // Empty for broadcast
+      relatedId: relatedId ? new mongoose.Types.ObjectId(relatedId) : undefined,
+      recipients: recipients || [req.user._id],
     });
-    
+
     await notification.save();
-    
-    emitNotification(notification);
-    
+
+    const io = req.app.get('io');
+    notification.recipients.forEach((recipientId) => {
+      io.to(recipientId.toString()).emit('notification', notification);
+    });
+
     res.status(201).json(notification);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Error creating notification', error: error.message });
   }
 };
 
-module.exports = { createNotification };
+exports.getNotifications = async (req, res) => {
+  try {
+    const notifications = await Notification.find({ recipients: req.user._id }).sort({ createdAt: -1 });
+    res.status(200).json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching notifications', error: error.message });
+  }
+};
