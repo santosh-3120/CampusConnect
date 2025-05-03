@@ -1,10 +1,10 @@
-// controllers/chatController.js
 const Chat = require('../models/Chat');
 const User = require('../models/User');
 
 exports.initiateChat = async (req, res) => {
   try {
     const { recipientId } = req.params;
+
     if (req.user._id.toString() === recipientId) {
       return res.status(400).json({ message: 'Cannot chat with yourself' });
     }
@@ -55,12 +55,17 @@ exports.sendMessage = async (req, res) => {
   try {
     const { chatId } = req.params;
     const { text } = req.body;
-    if (!text || !text.trim()) return res.status(400).json({ message: 'Message text is required' });
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: 'Message text is required' });
+    }
 
     const chat = await Chat.findById(chatId);
     if (!chat) return res.status(404).json({ message: 'Chat not found' });
 
-    const isParticipant = chat.participants.some(p => p.toString() === req.user._id.toString());
+    const isParticipant = chat.participants.some(p =>
+      p.toString() === req.user._id.toString()
+    );
     if (!isParticipant) {
       return res.status(403).json({ message: 'Not authorized to send messages in this chat' });
     }
@@ -101,6 +106,7 @@ exports.getChats = async (req, res) => {
     const chats = await Chat.find({ participants: req.user._id })
       .populate('participants', 'name rollNo')
       .sort({ lastMessage: -1 });
+
     res.status(200).json(chats);
   } catch (error) {
     console.error('Get chats error:', error);
@@ -114,7 +120,9 @@ exports.getChatMessages = async (req, res) => {
     const chat = await Chat.findById(chatId).populate('participants', 'name rollNo');
     if (!chat) return res.status(404).json({ message: 'Chat not found' });
 
-    const isParticipant = chat.participants.some(p => p.toString() === req.user._id.toString());
+    const isParticipant = chat.participants.some(p =>
+      p._id.toString() === req.user._id.toString()
+    );
     if (!isParticipant) {
       return res.status(403).json({ message: 'Not authorized to view this chat' });
     }

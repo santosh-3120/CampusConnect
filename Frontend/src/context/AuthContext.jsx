@@ -5,15 +5,25 @@ export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.get('http://localhost:3000/api/auth/dashboard', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then(response => setUser(response.data.user))
-        .catch(() => localStorage.removeItem('token'));
+      axios
+        .get('http://localhost:3000/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((response) => {
+          setUser(response.data.user);
+          setLoading(false);
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
     }
   }, []);
 
@@ -24,7 +34,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (name, email, rollNo, password, role) => {
-    await axios.post('http://localhost:3000/api/auth/register', { name, email, rollNo, password, role });
+    const response = await axios.post('http://localhost:3000/api/auth/register', {
+      name,
+      email,
+      rollNo,
+      password,
+      role,
+    });
+    localStorage.setItem('token', response.data.token);
+    setUser(response.data.user);
   };
 
   const logout = () => {
@@ -33,7 +51,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,36 +1,30 @@
-import { useState, useEffect } from 'react';
-import {
-  fetchItems,
-  fetchItem,
-  createItem as createItemAPI,
-  updateItem as updateItemAPI,
-  deleteItem as deleteItemAPI,
-  addComment as addCommentAPI,
-  claimItem as claimItemAPI,
-} from './lostFoundAPI';
+import { useState, useEffect, useCallback, useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
+import { fetchItems, fetchItemById, addItem, editItem, deleteItem } from './lostFoundAPI';
 
 export const useLostFoundItems = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const loadItems = async () => {
-      setLoading(true);
-      try {
-        const data = await fetchItems();
-        setItems(data);
-        setError(null);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch items');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadItems();
+  const loadItems = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchItems();
+      setItems(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return { items, loading, error };
+  useEffect(() => {
+    loadItems();
+  }, [loadItems]);
+
+  return { items, loading, error, refetch: loadItems };
 };
 
 export const useLostFoundItem = (id) => {
@@ -38,42 +32,72 @@ export const useLostFoundItem = (id) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetch = async () => {
+  const loadItem = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchItem(id);
+      const data = await fetchItemById(id);
       setItem(data);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch item');
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (id) loadItem();
+  }, [id, loadItem]);
+
+  return { item, loading, error, refetch: loadItem };
+};
+
+export const useLostFoundActions = () => {
+  const { user } = useContext(AuthContext);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const createItem = async (itemData) => {
+    setLoading(true);
+    try {
+      const response = await addItem({ ...itemData, user: user._id });
+      setError(null);
+      return response;
+    } catch (err) {
+      setError(err.message);
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (id) fetch();
-  }, [id]);
+  const updateItem = async (id, itemData) => {
+    setLoading(true);
+    try {
+      const response = await editItem(id, itemData);
+      setError(null);
+      return response;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  return { item, loading, error, refetch: fetch };
-};
+  const removeItem = async (id) => {
+    setLoading(true);
+    try {
+      const response = await deleteItem(id);
+      setError(null);
+      return response;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
-export const createItem = async (data) => {
-  await createItemAPI(data);
-};
-
-export const updateItem = async (id, data) => {
-  await updateItemAPI(id, data);
-};
-
-export const deleteItem = async (id) => {
-  await deleteItemAPI(id);
-};
-
-export const addComment = async (id, text) => {
-  await addCommentAPI(id, text);
-};
-
-export const claimItem = async (id) => {
-  await claimItemAPI(id);
+  return { createItem, updateItem, deleteItem: removeItem, loading, error };
 };

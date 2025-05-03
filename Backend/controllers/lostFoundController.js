@@ -6,29 +6,50 @@ const { uploadToCloudinary } = require('../utils/cloudinary');
 exports.createLostFoundItem = async (req, res) => {
   try {
     const { itemName, description, location, status, date, handoverTo, handoverLocation } = req.body;
+
+    // Check for required fields
     if (!itemName || !description || !location || !status || !date) {
       return res.status(400).json({ message: 'Required fields are missing' });
     }
 
-    const parsedDate = new Date(date);
+    // Ensure fields are strings before calling trim (if they are arrays, we handle accordingly)
+    const itemNameTrimmed = typeof itemName === 'string' ? itemName.trim() : itemName;
+    const descriptionTrimmed = Array.isArray(description) ? description[0].trim() : (typeof description === 'string' ? description.trim() : description);
+    const locationTrimmed = Array.isArray(location) ? location[0].trim() : (typeof location === 'string' ? location.trim() : location);
+    const handoverToTrimmed = Array.isArray(handoverTo) ? handoverTo[0].trim() : (typeof handoverTo === 'string' ? handoverTo.trim() : handoverTo);
+    const handoverLocationTrimmed = Array.isArray(handoverLocation) ? handoverLocation[0].trim() : (typeof handoverLocation === 'string' ? handoverLocation.trim() : handoverLocation);
+    const statusTrimmed = Array.isArray(status) ? status[0].trim() : (typeof status === 'string' ? status.trim() : status);
+
+    // Handle date input as an array and ensure it's a string
+    const dateString = Array.isArray(date) ? date[0].trim() : date.trim();
+
+    // Debugging the date input
+    console.log('Received date:', dateString);
+
+    // Handle date parsing and validation
+    const parsedDate = new Date(dateString);
+    console.log('Parsed date:', parsedDate); // Debugging parsed date
+
     if (isNaN(parsedDate.getTime())) {
-      return res.status(400).json({ message: 'Invalid date format' });
+      return res.status(400).json({ message: 'Invalid date format. Please use ISO 8601 format (e.g., "2025-05-01T10:00:00Z")' });
     }
 
+    // Handle file upload (if any)
     let imageUrl = '';
     if (req.file) {
       imageUrl = await uploadToCloudinary(req.file.buffer, 'lost-found');
     }
 
+    // Create the lost found item
     const item = new LostFoundItem({
-      itemName: itemName.trim(),
-      description: description.trim(),
+      itemName: itemNameTrimmed,
+      description: descriptionTrimmed,
       image: imageUrl,
-      location: location.trim(),
-      status,
+      location: locationTrimmed,
+      status: statusTrimmed,
       date: parsedDate,
-      handoverTo: handoverTo ? handoverTo.trim() : '',
-      handoverLocation: handoverLocation ? handoverLocation.trim() : '',
+      handoverTo: handoverToTrimmed,
+      handoverLocation: handoverLocationTrimmed,
       createdBy: {
         _id: req.user._id,
         name: req.user.name,
@@ -38,14 +59,16 @@ exports.createLostFoundItem = async (req, res) => {
 
     await item.save();
 
+    // Send notification about the new item
     const notification = new Notification({
-      message: `New ${status} item posted: ${itemName}`,
+      message: `New ${statusTrimmed} item posted: ${itemNameTrimmed}`,
       type: 'info',
       relatedId: item._id,
-      recipients: [],
+      recipients: [], // Add specific recipients if necessary
     });
     await notification.save();
 
+    // Emit notification to connected clients
     const io = req.app.get('io');
     io.emit('notification', notification);
 
