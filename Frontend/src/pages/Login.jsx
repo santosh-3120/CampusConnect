@@ -1,63 +1,61 @@
-import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import Spinner from '../components/common/Spinner';
-import Toast from '../components/common/Toast';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const { login, loading } = useContext(AuthContext);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState(null);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login(formData.email, formData.password);
+      await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError('Invalid email or password');
+      setError(err.response?.data?.message || 'Login failed');
     }
   };
 
-  if (loading) return <Spinner />;
-
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="card p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">Login</h1>
-        {error && <Toast message={error} type="error" />}
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Login to CollegeHub</h2>
+        {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Email</label>
+            <label className="block text-gray-700 mb-2" htmlFor="email">Email</label>
             <input
               type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="input-field"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
               required
             />
           </div>
           <div className="mb-6">
-            <label className="block text-gray-700 mb-2">Password</label>
+            <label className="block text-gray-700 mb-2" htmlFor="password">Password</label>
             <input
               type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="input-field"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
               required
             />
           </div>
-          <button type="submit" className="btn-primary w-full">Login</button>
+          <button
+            type="submit"
+            className="w-full bg-green-600 text-white p-3 rounded-lg font-semibold hover:bg-green-700"
+          >
+            Login
+          </button>
         </form>
         <p className="mt-4 text-center text-gray-600">
-          Don't have an account? <Link to="/register" className="text-indigo-600 hover:underline">Register</Link>
+          Don't have an account? <a href="/register" className="text-green-600 hover:underline">Sign Up</a>
         </p>
       </div>
     </div>
