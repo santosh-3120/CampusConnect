@@ -5,7 +5,7 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import CommentSection from '../components/lostAndFound/CommentSection';
 import Button from '../components/common/Button';
-import Toast from '../components/common/Toast';
+import {Toast} from '../components/common/Toast';
 import { useLostFoundItem, claimItem, deleteItem } from '../features/lostAndFound/lostFoundHooks';
 import placeholder from '../assets/react.svg'; 
 

@@ -8,7 +8,7 @@ import Textarea from '../components/common/Textarea';
 import Select from '../components/common/Select';
 import FileInput from '../components/common/FileInput';
 import Button from '../components/common/Button';
-import Toast from '../components/common/Toast';
+import {Toast} from '../components/common/Toast';
 import { useLostFoundItem, createItem, updateItem } from '../features/lostAndFound/lostFoundHooks';
 
 const CreateLostFound = () => {

@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import reactLogo from '../assets/react.svg';
@@ -6,6 +6,11 @@ import viteLogo from '/vite.svg';
 
 const Dashboard = () => {
   const { user, logout } = useContext(AuthContext);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+  };
 
   return (
     <div className="min-h-screen bg-blue-50 font-sans">
@@ -17,19 +22,62 @@ const Dashboard = () => {
               <span className="text-2xl font-bold text-green-600">CollegeHub</span>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {user.name} ({user.role})</span>
               <Link
                 to="/inbox"
-                className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium flex items-center"
               >
+                <svg
+                  className="w-5 h-5 mr-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  ></path>
+                </svg>
                 Inbox
               </Link>
-              <button
-                onClick={logout}
-                className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Logout
-              </button>
+              <div className="relative">
+                <button
+                  onClick={toggleModal}
+                  className="flex items-center text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                </button>
+                {isModalOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl z-10">
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-gray-800">{user.name}</h3>
+                      <p className="text-sm text-gray-600">{user.role}</p>
+                      <p className="text-sm text-gray-600 mt-1">{user.email}</p>
+                      <button
+                        onClick={logout}
+                        className="mt-4 w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -96,7 +144,7 @@ const Dashboard = () => {
               <div className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Clubs</h3>
                 <p className="text-gray-600 mb-4">Join or follow student clubs to stay updated on activities.</p>
-                <a href="/clubs" className="text-green-600 font-medium hover:underline">Learn More →</a>
+                <Link to="/clubs" className="text-green-600 font-medium hover:underline">Learn More →</Link>
               </div>
             </div>
             <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105">

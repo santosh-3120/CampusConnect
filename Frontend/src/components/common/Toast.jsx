@@ -1,16 +1,11 @@
-const Toast = ({ message, type, onClose }) => {
+import React from 'react';
+
+export const Toast = ({ message, type }) => {
+  const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+
   return (
-    <div
-      className={`fixed bottom-4 right-4 p-4 rounded-lg text-white ${
-        type === 'error' ? 'bg-red-600' : 'bg-green-600'
-      }`}
-    >
+    <div className={`fixed bottom-4 right-4 p-4 text-white rounded-md ${bgColor}`}>
       {message}
-      <button onClick={onClose} className="ml-4 font-bold">
-        ×
-      </button>
     </div>
   );
 };
-
-export default Toast;

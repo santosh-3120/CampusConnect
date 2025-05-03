@@ -5,7 +5,7 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import LostFoundFilter from '../components/lostAndFound/LostFoundFilter';
 import LostFoundCard from '../components/lostAndFound/LostFoundCard';
-import Toast from '../components/common/Toast';
+import {Toast} from '../components/common/Toast';
 import { useLostFoundItems } from '../features/lostAndFound/lostFoundHooks';
 
 const LostAndFound = () => {
