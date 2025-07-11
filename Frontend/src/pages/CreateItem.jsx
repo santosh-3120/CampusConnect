@@ -39,7 +39,7 @@ const CreateItem = () => {
       });
 
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:3000/marketplace/items', data, {
+      const response = await axios.post('http://localhost:3000/api/marketplace/items', data, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',

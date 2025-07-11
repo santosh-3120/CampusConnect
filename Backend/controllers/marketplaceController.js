@@ -19,34 +19,35 @@ exports.validateItem = [
 
 exports.createItem = async (req, res) => {
   try {
+    console.log('========== DEBUG createItem ==========');
     console.log('Request body:', req.body);
     console.log('File:', req.file);
+    console.log('File path:', req.file?.path);
     console.log('User:', req.user);
 
-    const { title, description, price, category, type } = req.body;
-
-    // Validate required fields
     if (!req.file) {
+      console.log('No file uploaded!');
       return res.status(400).json({ success: false, message: 'Image file is missing' });
     }
 
-    // Use the Cloudinary URL from multer-storage-cloudinary
-    const imageUrl = req.file.path; // This is the Cloudinary secure_url
+    const imageUrl = req.file.path;
+    console.log('Cloudinary imageUrl:', imageUrl);
 
-    // Create new item
     const item = new Item({
-      title,
-      description,
-      price,
-      category,
-      type,
-      imageUrl,
-      user: req.user._id, // Use _id instead of id
+      title: req.body.title,
+      description: req.body.description,
+      price: req.body.price,
+      category: req.body.category,
+      type: req.body.type,
+      imageUrl: imageUrl,
+      user: req.user._id,
     });
 
-    console.log('Saving item:', item);
+    console.log('Item about to save:', item);
+
     await item.save();
-    console.log('Item saved:', item);
+
+    console.log('✅ Item saved:', item);
 
     res.status(201).json({
       success: true,
@@ -54,15 +55,17 @@ exports.createItem = async (req, res) => {
       data: item,
     });
   } catch (error) {
-    console.error('Error creating item:', error.stack);
+    console.error('❌ Error creating item:', error);
+    if (error.errors) console.error('Mongoose validation errors:', error.errors);
     res.status(500).json({
       success: false,
       message: 'Error creating item',
       error: error.message,
-      stack: error.stack, // Remove in production
+      stack: error.stack,
     });
   }
 };
+
 exports.getItems = asyncHandler(async (req, res) => {
   const { category, type, status, minPrice, maxPrice, title } = req.query;
   const query = {};
