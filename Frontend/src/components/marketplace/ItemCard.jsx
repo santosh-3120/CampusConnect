@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useMarkAsSold } from '../../features/marketplace/marketplaceHooks';
-import { Toast } from '../common/Toast'; // Changed to named import
+import { Toast } from '../common/Toast';
 
 const ItemCard = ({ item, isDashboard = false }) => {
   const { markAsSold, isLoading, error } = useMarkAsSold();
@@ -10,24 +10,33 @@ const ItemCard = ({ item, isDashboard = false }) => {
     await markAsSold(item._id);
   };
 
+  // fallback image if item.imageUrl is missing or broken (optional)
+  const fallbackImage = 'https://placehold.co/300x160?text=No+Image';
+
   return (
-    <div className="border rounded-lg shadow-md p-4 bg-white">
+    <div className="bg-gray-800/90 rounded-lg shadow-md p-4 hover:shadow-lg transition flex flex-col">
       <img
-        src={item.imageUrl}
+        src={item.imageUrl || fallbackImage}
         alt={item.title}
-        className="w-full h-48 object-cover rounded mb-4"
+        className="w-full h-40 object-cover rounded-t-lg mb-4"
+        onError={(e) => {
+          if (e.target.src !== fallbackImage) {
+            e.target.src = fallbackImage;
+          }
+        }}
       />
-      <h3 className="text-lg font-semibold">{item.title}</h3>
-      <p className="text-gray-600">{item.description.substring(0, 100)}...</p>
-      <p className="text-green-600 font-bold">₹{item.price}</p>
-      <p className="text-sm text-gray-500">Category: {item.category}</p>
-      <p className="text-sm text-gray-500">Type: {item.type}</p>
-      <p className="text-sm text-gray-500">Status: {item.status}</p>
+      <h3 className="text-lg font-semibold text-gray-100">{item.title}</h3>
+      <p className="text-gray-400 mt-1 line-clamp-3">{item.description}</p>
+      <p className="text-green-400 font-bold mt-2">₹{item.price}</p>
+      <p className="text-sm text-gray-300 mt-1">Category: {item.category}</p>
+      <p className="text-sm text-gray-300">Type: {item.type}</p>
+      <p className="text-sm text-gray-300">Status: {item.status}</p>
+
       {isDashboard ? (
-        <div className="mt-4 flex space-x-2">
+        <div className="mt-4 flex space-x-3">
           <Link
             to={`/marketplace/edit/${item._id}`}
-            className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+            className="text-yellow-400 hover:underline text-sm"
           >
             Edit
           </Link>
@@ -35,7 +44,7 @@ const ItemCard = ({ item, isDashboard = false }) => {
             <button
               onClick={handleMarkAsSold}
               disabled={isLoading}
-              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 disabled:opacity-50"
+              className="text-red-400 hover:underline text-sm disabled:opacity-50"
             >
               {isLoading ? 'Marking...' : 'Mark as Sold'}
             </button>
@@ -44,7 +53,7 @@ const ItemCard = ({ item, isDashboard = false }) => {
       ) : (
         <Link
           to={`/marketplace/${item._id}`}
-          className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="mt-4 inline-block text-green-400 font-medium hover:underline text-sm"
         >
           View Details
         </Link>

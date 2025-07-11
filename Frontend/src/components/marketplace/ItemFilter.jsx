@@ -20,15 +20,17 @@ const ItemFilter = ({ onFilter }) => {
   };
 
   return (
-    <div className="bg-gray-100 p-4 rounded-lg mb-4">
-      <h2 className="text-lg font-semibold mb-2">Filter Items</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="bg-gray-800 p-6 rounded-lg mb-6 shadow-lg max-w-7xl mx-auto">
+      <h2 className="text-yellow-300 text-xl font-semibold mb-5">Filter Items</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <InputField
           label="Search by Title"
           name="title"
           value={filters.title}
           onChange={handleChange}
           placeholder="Enter item title"
+          inputClass="bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:border-yellow-400 focus:ring focus:ring-yellow-400/50"
+          labelClass="text-gray-300"
         />
         <Select
           label="Category"
@@ -39,6 +41,8 @@ const ItemFilter = ({ onFilter }) => {
             value: cat,
             label: cat.charAt(0).toUpperCase() + cat.slice(1),
           }))]}
+          selectClass=""
+          labelClass="text-gray-300"
         />
         <Select
           label="Type"
@@ -49,6 +53,8 @@ const ItemFilter = ({ onFilter }) => {
             value: type,
             label: type.charAt(0).toUpperCase() + type.slice(1),
           }))]}
+          selectClass=""
+          labelClass="text-gray-300"
         />
         <InputField
           label="Min Price"
@@ -57,6 +63,8 @@ const ItemFilter = ({ onFilter }) => {
           value={filters.minPrice}
           onChange={handleChange}
           placeholder="Min price"
+          inputClass="bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:border-yellow-400 focus:ring focus:ring-yellow-400/50"
+          labelClass="text-gray-300"
         />
         <InputField
           label="Max Price"
@@ -65,6 +73,8 @@ const ItemFilter = ({ onFilter }) => {
           value={filters.maxPrice}
           onChange={handleChange}
           placeholder="Max price"
+          inputClass="bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:border-yellow-400 focus:ring focus:ring-yellow-400/50"
+          labelClass="text-gray-300"
         />
         <Select
           label="Status"
@@ -76,6 +86,8 @@ const ItemFilter = ({ onFilter }) => {
             { value: 'Available', label: 'Available' },
             { value: 'Sold', label: 'Sold' },
           ]}
+          selectClass=""
+          labelClass="text-gray-300"
         />
       </div>
     </div>

@@ -5,7 +5,7 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import LostFoundFilter from '../components/lostAndFound/LostFoundFilter';
 import LostFoundCard from '../components/lostAndFound/LostFoundCard';
-import {Toast} from '../components/common/Toast';
+import { Toast } from '../components/common/Toast';
 import { useLostFoundItems } from '../features/lostAndFound/lostFoundHooks';
 
 const LostAndFound = () => {
@@ -22,24 +22,33 @@ const LostAndFound = () => {
   });
 
   return (
-    <div className="min-h-screen bg-blue-50 font-sans flex flex-col">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-600 to-purple-600 font-sans text-white">
       <Navbar user={user} logout={logout} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">Lost & Found</h2>
+          <h2 className="text-3xl font-extrabold text-yellow-300">Lost & Found</h2>
           <Link
             to="/lost-and-found/new"
-            className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition"
           >
             Post New Item
           </Link>
         </div>
-        <LostFoundFilter filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} />
+
+        <LostFoundFilter
+          filter={filter}
+          setFilter={setFilter}
+          search={search}
+          setSearch={setSearch}
+          className="mb-6"
+        />
+
         {error && <Toast message={error} type="error" onClose={() => setToast(null)} />}
         {loading ? (
-          <div className="text-center text-gray-600">Loading...</div>
+          <p className="text-center text-gray-300">Loading...</p>
         ) : filteredItems.length === 0 ? (
-          <p className="text-gray-600 text-center">No items found.</p>
+          <p className="text-center text-gray-300">No items found.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItems.map((item) => (
@@ -47,8 +56,10 @@ const LostAndFound = () => {
             ))}
           </div>
         )}
-      </div>
+      </main>
+
       <Footer />
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
