@@ -84,14 +84,14 @@ function ClubDetails() {
 
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
-  const isStudentFollowing = user?.role === 'student' && club?.followers?.includes(user._id);
   const isAdmin = user?.role === 'admin';
+
+  const isStudentFollowing = user?.role === 'student' && club?.followers?.includes(user.id);
 
   if (isLoading) return <Spinner />;
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-600 to-purple-600 font-sans text-white">
-      {/* Navbar same as Dashboard */}
       <nav className="bg-gray-900 bg-opacity-90 shadow-lg p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">CampusConnect Clubs</h1>
@@ -148,7 +148,7 @@ function ClubDetails() {
                   isFollowing={isStudentFollowing}
                   onFollow={async () => {
                     await followClub();
-                    await fetchClub();
+                    await fetchClub(); // ✅ Make sure the club is re-fetched
                     await fetchMessages();
                     await fetchFollowers();
                   }}
@@ -204,7 +204,7 @@ function ClubDetails() {
       {showFollowersModal && (
         <FollowersModal
           followers={followers}
-          onClose={() => setShowFollowersModal(false)}
+          onClose={async () => {setShowFollowersModal(false); await fetchFollowers();}}
           onRemove={handleRemoveFollower}
           isAdmin={isAdmin}
         />

@@ -24,11 +24,8 @@ function Messages({
         setOpenDropdownId(null);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const toggleDropdown = (msgId) => {
@@ -45,13 +42,13 @@ function Messages({
   const showError = error && !isLoading && messages === undefined;
 
   return (
-    <div className="mt-6">
-      <h2 className="text-xl font-semibold mb-2">Club Messages</h2>
+    <div className="mt-8">
+      <h2 className="text-2xl font-bold text-yellow-300 mb-4">Club Messages</h2>
 
-      {isLoading && <p>Loading messages...</p>}
-      {showError && <p className="text-red-500">{error}</p>}
+      {isLoading && <p className="text-gray-300">Loading messages...</p>}
+      {showError && <p className="text-red-400">{error}</p>}
       {!isLoading && !hasMessages && !showError && (
-        <p className="text-gray-500">No messages yet.</p>
+        <p className="text-gray-400 italic">No messages yet.</p>
       )}
 
       {hasMessages && (
@@ -59,21 +56,21 @@ function Messages({
           {messages.map((msg) => (
             <li
               key={msg._id}
-              className="bg-white p-3 border rounded shadow-sm relative group"
+              className="relative group p-4 bg-white/10 text-white rounded-xl backdrop-blur-sm shadow-lg border border-white/20"
               ref={(el) => (dropdownRefs.current[msg._id] = el)}
             >
               {canDelete && (
                 <>
                   <button
                     onClick={() => toggleDropdown(msg._id)}
-                    className="absolute top-2 right-2 p-1 rounded-full cursor-pointer text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition"
+                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-white/20 text-white transition"
                     title="Options"
                   >
-                    <MoreVertical size={20} />
+                    <MoreVertical size={18} />
                   </button>
 
                   {openDropdownId === msg._id && (
-                    <div className="absolute right-2 top-8 bg-white border rounded shadow-md z-10">
+                    <div className="absolute right-2 top-9 bg-white text-sm text-gray-800 rounded shadow-md z-10">
                       <button
                         onClick={() => {
                           setOpenDropdownId(null);
@@ -81,7 +78,7 @@ function Messages({
                             onDelete?.(msg._id);
                           }
                         }}
-                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
+                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100 rounded-b"
                       >
                         Delete
                       </button>
@@ -90,20 +87,22 @@ function Messages({
                 </>
               )}
 
-              <p className="text-gray-800">{msg.content}</p>
-              <p className="text-xs text-gray-500 mt-2">
-                <span className="font-semibold text-gray-700">By: </span>{msg.author?.name || 'Unknown'} &nbsp;|&nbsp;
+              <p className="text-white">{msg.content}</p>
+              <p className="text-xs text-gray-300 mt-2">
+                <span className="font-semibold text-yellow-300">By: </span>
+                {msg.author?.name || 'Unknown'} &nbsp;|&nbsp;
                 <span>
                   {new Date(msg.createdAt).toLocaleDateString(undefined, {
-                    weekday: 'long',
+                    weekday: 'short',
                     year: 'numeric',
                     month: 'short',
-                    day: 'numeric',
-                  })} &nbsp;|&nbsp;
+                    day: 'numeric'
+                  })}{' '}
+                  •{' '}
                   {new Date(msg.createdAt).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
-                    hour12: true,
+                    hour12: true
                   })}
                 </span>
               </p>
@@ -113,17 +112,21 @@ function Messages({
       )}
 
       {canPost && (
-        <form onSubmit={handleSubmit} className="mt-4">
+        <form
+          onSubmit={handleSubmit}
+          className="mt-6 bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20"
+        >
           <textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            className="w-full p-2 border rounded"
+            className="w-full p-3 rounded-lg bg-white/20 text-white placeholder-gray-300 resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"
             placeholder="Write a message..."
+            rows={3}
           />
           <button
             type="submit"
             disabled={!newMessage.trim()}
-            className="bg-green-600 text-white px-4 py-2 rounded mt-2 disabled:opacity-50"
+            className="mt-3 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold px-6 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Post Message
           </button>

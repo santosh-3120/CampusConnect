@@ -6,28 +6,28 @@ function ClubClubNavbar() {
   const { user, logout } = useContext(AuthContext);
 
   return (
-    <nav className="bg-white shadow-lg">
+    <nav className="bg-gray-900 bg-opacity-90 shadow-lg p-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/dashboard" className="text-2xl font-bold text-green-600">
-              CollegeHub
+            <Link to="/dashboard" className="text-2xl text-white font-bold hover:text-yellow-300">
+              CampusConnectClubs
             </Link>
           </div>
           {user && (
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">
+              <span className="text-white">
                 Welcome, {user.name} ({user.role})
               </span>
               <Link
                 to="/dashboard"
-                className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-white hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Dashboard
               </Link>
               <Link
                 to="/clubs"
-                className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-white hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Clubs
               </Link>
@@ -41,7 +41,7 @@ function ClubClubNavbar() {
               )} */}
               <button
                 onClick={logout}
-                className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-white hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Logout
               </button>

@@ -162,19 +162,21 @@ export function useUnfollowClub(id, fetchMessages) {
   return { unfollowClub, isUnfollowing };
 }
 
-export function useDeleteMessage(clubId, messageId) {
+
+export function useDeleteMessage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const deleteMessage = useCallback(async () => {
+  const deleteMessage = useCallback(async (clubId, messageId) => {
+    if (!clubId || !messageId) throw new Error("Missing clubId or messageId");
     setIsDeleting(true);
     try {
       await clubsAPI.deleteMessage(clubId, messageId);
-      setIsDeleting(false);
     } catch (err) {
-      setIsDeleting(false);
       throw err;
+    } finally {
+      setIsDeleting(false);
     }
-  }, [clubId, messageId]);
+  }, []);
 
   return { deleteMessage, isDeleting };
 }
