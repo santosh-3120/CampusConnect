@@ -1,5 +1,6 @@
 // utils/cloudinary.js
 const cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier'); // Required for buffer streaming
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -8,6 +9,10 @@ cloudinary.config({
 });
 
 const uploadToCloudinary = async (buffer, folder = 'campus-connect') => {
+  if (!buffer || !Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw new Error('Cloudinary upload failed: File buffer is empty or invalid');
+  }
+
   try {
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
@@ -17,8 +22,9 @@ const uploadToCloudinary = async (buffer, folder = 'campus-connect') => {
           else resolve(result);
         }
       );
-      stream.end(buffer);
+      streamifier.createReadStream(buffer).pipe(stream); // ✅ Safe and stable
     });
+
     return result.secure_url;
   } catch (error) {
     throw new Error(`Cloudinary upload failed: ${error.message}`);

@@ -4,8 +4,8 @@ import { useEvent, useEventActions } from '../features/events/eventsHooks';
 import { AuthContext } from '../context/AuthContext';
 import InputField from '../components/common/InputField';
 import Textarea from '../components/common/Textarea';
-import {Spinner} from '../components/common/Spinner';
-import {Toast} from '../components/common/Toast';
+import { Spinner } from '../components/common/Spinner';
+import { Toast } from '../components/common/Toast';
 
 const CreateEvent = () => {
   const { id } = useParams();
@@ -28,6 +28,7 @@ const CreateEvent = () => {
   });
 
   const isAdmin = user?.role === 'admin' || user?.role === 'club_coordinator';
+
   useEffect(() => {
     if (!isAdmin) {
       navigate('/events');
@@ -83,6 +84,7 @@ const CreateEvent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!imageFile && !id) {
       setErrorMessage('Please upload an event image.');
       setShowErrorToast(true);
@@ -90,29 +92,29 @@ const CreateEvent = () => {
       return;
     }
 
-    const data = new FormData();
-    data.append('title', formData.title);
-    data.append('description', formData.description);
-    data.append('date', formData.date);
-    data.append('location', formData.location);
-    if (imageFile) data.append('image', imageFile);
+    const formPayload = new FormData();
+    formPayload.append('title', formData.title);
+    formPayload.append('description', formData.description);
+    formPayload.append('date', formData.date);
+    formPayload.append('location', formData.location);
+
+    if (imageFile && imageFile instanceof File) {
+      formPayload.append('image', imageFile);
+    }
 
     try {
       if (id) {
-        await updateEvent(id, data);
-        setShowSuccessToast(true);
-        setTimeout(() => {
-          setShowSuccessToast(false);
-          navigate('/events');
-        }, 3000);
+        await updateEvent(id, formPayload);
       } else {
-        await createEvent(data);
-        setShowSuccessToast(true);
-        setTimeout(() => {
-          setShowSuccessToast(false);
-          navigate('/events');
-        }, 3000);
+        await createEvent(formPayload);
       }
+
+      setShowSuccessToast(true);
+      setTimeout(() => {
+        setShowSuccessToast(false);
+        navigate('/events');
+      }, 3000);
+
       setImageFile(null);
       setImagePreview(null);
       setFormData({ title: '', description: '', date: '', location: '' });
