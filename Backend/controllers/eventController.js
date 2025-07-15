@@ -1,4 +1,3 @@
-// controllers/eventController.js
 const mongoose = require('mongoose');
 const Event = require('../models/Event');
 const User = require('../models/User');
@@ -13,7 +12,7 @@ exports.createEvent = async (req, res) => {
     }
 
     let imageUrl = '';
-    if (req.file) {
+    if (req.file && req.file.buffer) {
       imageUrl = await uploadToCloudinary(req.file.buffer, 'events');
     }
 
@@ -28,6 +27,7 @@ exports.createEvent = async (req, res) => {
 
     await event.save();
 
+    // Notify students
     const students = await User.find({ role: 'student' });
     const emailPromises = students.map(student =>
       sendEmail(
@@ -40,6 +40,7 @@ exports.createEvent = async (req, res) => {
 
     res.status(201).json(event);
   } catch (error) {
+    console.error('Create Event Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -54,8 +55,11 @@ exports.updateEvent = async (req, res) => {
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
-    if (event.creator.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized' });
+    const isOwner = event.creator.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to update this event' });
     }
 
     const { title, description, date, location } = req.body;
@@ -63,12 +67,14 @@ exports.updateEvent = async (req, res) => {
     if (description) event.description = description.trim();
     if (date) event.date = date;
     if (location) event.location = location.trim();
-    if (req.file) {
+
+    if (req.file && req.file.buffer) {
       event.image = await uploadToCloudinary(req.file.buffer, 'events');
     }
 
     await event.save();
 
+    // Notify students about update
     const students = await User.find({ role: 'student' });
     const emailPromises = students.map(student =>
       sendEmail(
@@ -81,6 +87,7 @@ exports.updateEvent = async (req, res) => {
 
     res.json(event);
   } catch (error) {
+    console.error('Update Event Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -95,13 +102,17 @@ exports.deleteEvent = async (req, res) => {
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
-    if (event.creator.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized' });
+    const isOwner = event.creator.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to delete this event' });
     }
 
     await event.deleteOne();
-    res.json({ message: 'Event deleted' });
+    res.json({ message: 'Event deleted successfully' });
   } catch (error) {
+    console.error('Delete Event Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -111,8 +122,10 @@ exports.getAllEvents = async (req, res) => {
     const events = await Event.find()
       .populate('creator', 'name email')
       .sort({ date: 1 });
+
     res.json(events);
   } catch (error) {
+    console.error('Get All Events Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -126,7 +139,8 @@ exports.getEventById = async (req, res) => {
 
     const event = await Event.findById(id)
       .populate('creator', 'name email')
-      .populate('rsvps', 'name email');
+      .populate('rsvps', 'name email')
+      .populate('comments.userId', 'name profileImage');
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
@@ -134,6 +148,7 @@ exports.getEventById = async (req, res) => {
 
     res.json(event);
   } catch (error) {
+    console.error('Get Event By ID Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -148,7 +163,8 @@ exports.rsvpEvent = async (req, res) => {
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
-    if (event.rsvps.includes(req.user._id)) {
+    const hasRSVPed = event.rsvps.some(uid => uid.toString() === req.user._id.toString());
+    if (hasRSVPed) {
       return res.status(400).json({ message: 'Already RSVP\'d' });
     }
 
@@ -157,6 +173,7 @@ exports.rsvpEvent = async (req, res) => {
 
     res.json({ message: 'RSVP successful', event });
   } catch (error) {
+    console.error('RSVP Event Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -164,27 +181,37 @@ exports.rsvpEvent = async (req, res) => {
 exports.addComment = async (req, res) => {
   try {
     const { id } = req.params;
+    const { text } = req.body;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid event ID' });
     }
 
-    const { text } = req.body;
-    if (!text) return res.status(400).json({ message: 'Comment text is required' });
-
-    let imageUrl = '';
-    if (req.file) {
-      imageUrl = await uploadToCloudinary(req.file.buffer, 'event-comments');
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: 'Comment text is required' });
     }
 
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
-    event.comments.push({ userId: req.user._id, text: text.trim(), image: imageUrl });
+    let imageUrl = '';
+    if (req.file && req.file.buffer) {
+      imageUrl = await uploadToCloudinary(req.file.buffer, 'event-comments');
+    }
+
+    event.comments.push({
+      userId: req.user._id,
+      text: text.trim(),
+      image: imageUrl,
+    });
+
     await event.save();
 
     const updatedEvent = await Event.findById(id).populate('comments.userId', 'name profileImage');
+
     res.status(200).json(updatedEvent);
   } catch (error) {
+    console.error('Add Comment Error:', error);
     res.status(500).json({ message: 'Failed to add comment', error: error.message });
   }
 };
@@ -199,19 +226,21 @@ exports.toggleLike = async (req, res) => {
     const event = await Event.findById(id);
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
-    const userIndex = event.likes.indexOf(req.user._id);
+    const userId = req.user._id.toString();
+    const index = event.likes.findIndex(uid => uid.toString() === userId);
     let liked = false;
 
-    if (userIndex === -1) {
+    if (index === -1) {
       event.likes.push(req.user._id);
       liked = true;
     } else {
-      event.likes.splice(userIndex, 1);
+      event.likes.splice(index, 1);
     }
 
     await event.save();
     res.status(200).json({ liked, likeCount: event.likes.length });
   } catch (error) {
+    console.error('Toggle Like Error:', error);
     res.status(500).json({ message: 'Failed to toggle like', error: error.message });
   }
 };

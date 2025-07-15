@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { getAllEvents, getEventById, createEvent, updateEvent, deleteEvent, rsvpEvent } from './eventsAPI';
+import {
+  getAllEvents,
+  getEventById,
+  createEvent as apiCreateEvent,
+  updateEvent as apiUpdateEvent,
+  deleteEvent as apiDeleteEvent,
+  rsvpEvent as apiRsvpEvent
+} from './eventsAPI';
 
 // Hook to manage events
 export const useEvents = () => {
@@ -8,7 +15,6 @@ export const useEvents = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load events function
   const loadEvents = useCallback(async () => {
     setLoading(true);
     try {
@@ -22,7 +28,6 @@ export const useEvents = () => {
     }
   }, []);
 
-  // Trigger loadEvents once when the component mounts
   useEffect(() => {
     loadEvents();
   }, [loadEvents]);
@@ -36,7 +41,6 @@ export const useEvent = (id) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load event function
   const loadEvent = useCallback(async () => {
     setLoading(true);
     try {
@@ -50,12 +54,10 @@ export const useEvent = (id) => {
     }
   }, [id]);
 
-  // Load event when ID changes or is set initially
   useEffect(() => {
     if (id) loadEvent();
   }, [id, loadEvent]);
 
-  // Refetch the event data
   const refetch = useCallback(() => {
     if (id) loadEvent();
   }, [id, loadEvent]);
@@ -63,17 +65,16 @@ export const useEvent = (id) => {
   return { event, loading, error, refetch };
 };
 
-// Hook for performing event actions like creating, updating, deleting, or RSVPing
+// ✅ Hook for performing event actions (with fixed naming)
 export const useEventActions = () => {
   const { user } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Create event function
-  const createEvent = async (eventData) => {
+  const handleCreateEvent = async (eventData) => {
     setLoading(true);
     try {
-      const response = await createEvent(eventData);
+      const response = await apiCreateEvent(eventData);
       setError(null);
       return response;
     } catch (err) {
@@ -84,11 +85,10 @@ export const useEventActions = () => {
     }
   };
 
-  // Update event function
-  const updateEvent = async (id, eventData) => {
+  const handleUpdateEvent = async (id, eventData) => {
     setLoading(true);
     try {
-      const response = await updateEvent(id, eventData);
+      const response = await apiUpdateEvent(id, eventData);
       setError(null);
       return response;
     } catch (err) {
@@ -99,11 +99,10 @@ export const useEventActions = () => {
     }
   };
 
-  // Delete event function
-  const deleteEvent = async (id) => {
+  const handleDeleteEvent = async (id) => {
     setLoading(true);
     try {
-      const response = await deleteEvent(id);
+      const response = await apiDeleteEvent(id);
       setError(null);
       return response;
     } catch (err) {
@@ -114,11 +113,10 @@ export const useEventActions = () => {
     }
   };
 
-  // RSVP to event function
-  const rsvp = async (id) => {
+  const handleRsvp = async (id) => {
     setLoading(true);
     try {
-      const response = await rsvpEvent(id);
+      const response = await apiRsvpEvent(id);
       setError(null);
       return response;
     } catch (err) {
@@ -129,5 +127,12 @@ export const useEventActions = () => {
     }
   };
 
-  return { createEvent, updateEvent, deleteEvent, rsvp, loading, error };
+  return {
+    createEvent: handleCreateEvent,
+    updateEvent: handleUpdateEvent,
+    deleteEvent: handleDeleteEvent,
+    rsvp: handleRsvp,
+    loading,
+    error
+  };
 };
