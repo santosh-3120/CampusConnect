@@ -47,12 +47,19 @@ export const updateItem = async (id, formData) => {
     throw new Error(error.response?.data?.message || 'Failed to update item');
   }
 };
+// ✅ Get single item by ID
+export const getItemById = async (id) => {
+  const response = await fetch(`http://localhost:3000/api/marketplace/${id}`);
+  if (!response.ok) throw new Error('Failed to fetch item');
+  return await response.json();
+};
+
 
 export const markItemAsSold = async (id) => {
   try {
     const token = localStorage.getItem('token');
     console.log("Id: " + id);
-    const response = await api.patch(`/marketplace/${id}/sold`, null, {
+    const response = await api.patch(`/marketplace/${id}/sold`, {},{
       headers: {
         Authorization: `Bearer ${token}`,
       },

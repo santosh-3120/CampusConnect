@@ -1,20 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useMarkAsSold } from '../../features/marketplace/marketplaceHooks';
 import { Toast } from '../common/Toast';
 
-const ItemCard = ({ item, isDashboard = false }) => {
-  const { markAsSold, isLoading, error } = useMarkAsSold();
-
-  const handleMarkAsSold = async () => {
-    await markAsSold(item._id);
-  };
-
-  // fallback image if item.imageUrl is missing or broken (optional)
+const ItemCard = ({ item, isDashboard = false, onMarkAsSold, isLoading, error }) => {
+  // fallback image if item.imageUrl is missing or broken
   const fallbackImage = 'https://placehold.co/300x160?text=No+Image';
 
   return (
-    <div className="bg-gray-800/90 rounded-lg shadow-md p-4 hover:shadow-lg transition flex flex-col">
+    <div className="bg-gray-800/90 rounded-lg shadow-md p-4 hover:shadow-lg transition flex flex-col w-[350px]">
       <img
         src={item.imageUrl || fallbackImage}
         alt={item.title}
@@ -42,7 +35,7 @@ const ItemCard = ({ item, isDashboard = false }) => {
           </Link>
           {item.status !== 'Sold' && (
             <button
-              onClick={handleMarkAsSold}
+              onClick={() => onMarkAsSold(item._id)}
               disabled={isLoading}
               className="text-red-400 hover:underline text-sm disabled:opacity-50"
             >

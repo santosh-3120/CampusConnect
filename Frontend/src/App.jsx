@@ -2,8 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
-import Inbox from './pages/Inbox.jsx';
-import Chat from './pages/Chat.jsx';
+//import Inbox from './pages/Inbox.jsx';
 import LostAndFound from './pages/LostAndFound.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LostAndFoundDetails from './pages/LostAndFoundDetails.jsx';
@@ -19,6 +18,11 @@ import Events from './pages/Events.jsx';
 import EventDetails from './pages/EventDetails.jsx';
 import CreateEvent from './pages/CreateEvent.jsx';
 import Home from './pages/Home.jsx';
+import Chats from './pages/Chats';
+import EditItem from './pages/EditItem.jsx';
+import EditLostFound from './pages/EditLostFoundItem.jsx';
+import ChatPage from './pages/ChatPage';
+
 
 
 function App() {
@@ -36,21 +40,30 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
+
+        {/* <Route
           path="/inbox"
           element={
             <ProtectedRoute>
               <Inbox />
             </ProtectedRoute>
           }
-        />
+        /> */}
 
 
-        <Route
-          path="/chat/:chatId"
+          <Route
+          path="/chats"
           element={
             <ProtectedRoute>
-              <Chat />
+              <Chats />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/chats/:chatId"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
             </ProtectedRoute>
           }
         />
@@ -63,6 +76,15 @@ function App() {
           }
         />
         <Route
+  path="/lost-and-found/:id/edit"
+  element={
+    <ProtectedRoute>
+      <EditLostFound />
+    </ProtectedRoute>
+  }
+/>
+
+        <Route
           path="/lost-and-found"
           element={
             <ProtectedRoute>
@@ -70,6 +92,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
+
 
 <Route
   path="/lost-and-found/:id"
@@ -95,6 +119,14 @@ function App() {
           element={
             <ProtectedRoute>
               <MarketplaceDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/marketplace/edit/:id"
+          element={
+            <ProtectedRoute>
+              <EditItem />
             </ProtectedRoute>
           }
         />

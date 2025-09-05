@@ -144,25 +144,30 @@ exports.updateItem = asyncHandler(async (req, res) => {
 });
 
 exports.markItemAsSold = asyncHandler(async (req, res) => {
+  try {
+    console.log("🔎 Mark as sold request:", req.params.id, "User:", req.user);
 
-  console.log(req.params.id);
-  const item = await Item.findById(req.params.id);
-  if (!item) {
-    res.status(404);
-    throw new Error('Item not found');
-  }
-  if (item.user.toString() !== req.user._id.toString()) {
-    res.status(403);
-    throw new Error('Not authorized to mark this item as sold');
-  }
-  if (item.status === 'Sold') {
-    res.status(400);
-    throw new Error('Item is already sold');
-  }
+    const item = await Item.findById(req.params.id);
+    if (!item) {
+      return res.status(404).json({ message: "Item not found" });
+    }
 
-  item.status = 'Sold';
-  await item.save();
-  res.status(200).json(item);
+    if (item.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to mark this item as sold" });
+    }
+
+    if (item.status === 'Sold') {
+      return res.status(400).json({ message: "Item is already sold" });
+    }
+
+    item.status = 'Sold';
+    await item.save();
+
+    res.status(200).json({ success: true, message: "Item marked as sold", item });
+  } catch (err) {
+    console.error("❌ Error in markItemAsSold:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 });
 
 exports.getUserItems =asyncHandler(async (req, res) => {

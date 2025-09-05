@@ -80,7 +80,6 @@ export const useCreateItem = () => {
   return { createItem: create, isLoading, error };
 };
 
-
 export const useUpdateItem = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -106,11 +105,13 @@ export const useMarkAsSold = () => {
 
   const markAsSold = async (id) => {
     setIsLoading(true);
+    setError(null);
     try {
-      await markItemAsSold(id);
-      setError(null);
+      const updatedItem = await markItemAsSold(id); // ✅ get updated item from API
+      return updatedItem; // ✅ return it so Dashboard can use it
     } catch (err) {
       setError(err.message);
+      throw err; // ✅ rethrow so Dashboard knows it failed
     } finally {
       setIsLoading(false);
     }

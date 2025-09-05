@@ -1,7 +1,7 @@
 const Select = ({ label, id, name, value, onChange, options }) => {
     return (
       <div className="mb-4">
-        <label htmlFor={id} className="block text-gray-700 mb-2">
+        <label htmlFor={id} className="block text-gray-200 mb-2">
           {label}
         </label>
         <select
@@ -12,7 +12,7 @@ const Select = ({ label, id, name, value, onChange, options }) => {
           className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
         >
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} className="text-black">
               {option.label}
             </option>
           ))}

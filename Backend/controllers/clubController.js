@@ -9,7 +9,7 @@ exports.createClub = async (req, res) => {
 
     let imageUrl = '';
     if (req.file) {
-      imageUrl = await uploadToCloudinary(req.file.buffer, 'clubs');
+      imageUrl = req.file.path;
     }
 
     const club = new Club({
@@ -73,7 +73,7 @@ exports.updateClub = async (req, res) => {
       }
     }
     if (req.file) {
-      club.logo = await uploadToCloudinary(req.file.buffer, 'clubs');
+      club.logo = req.file.path;
     }
 
     await club.save();

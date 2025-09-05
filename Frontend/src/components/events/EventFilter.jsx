@@ -39,6 +39,7 @@ const EventFilter = ({ onFilter }) => {
           name="location"
           value={filters.location}
           onChange={handleChange}
+          placeholder={"Enter Location"}
           className="bg-transparent text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 w-full"
         />
       </div>

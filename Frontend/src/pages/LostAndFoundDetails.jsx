@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import CommentSection from '../components/lostAndFound/CommentSection';
@@ -13,16 +13,31 @@ const LostAndFoundDetails = () => {
   const { user, logout } = useContext(AuthContext);
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { item, loading, error, refetch } = useLostFoundItem(id);
   const [toast, setToast] = useState(null);
+  const [localItem, setLocalItem] = useState(null);
+
+  // Update localItem with navigated state or fetched item
+  useEffect(() => {
+    if (location.state?.updatedItem) {
+      setLocalItem(location.state.updatedItem);
+    } else if (item) {
+      setLocalItem(item);
+    }
+  }, [item, location.state]);
 
   const handleClaim = async () => {
     try {
-      await claimItem(id);
+      const response = await claimItem(id);
       setToast({ message: 'Item claimed successfully', type: 'success' });
-      refetch();
+      setLocalItem(response); // Update local state immediately
+      await refetch(); // Refresh item data
     } catch (err) {
-      setToast({ message: err.message || 'Failed to claim item', type: 'error' });
+      setToast({
+        message: err.response?.data?.message || err.message || 'Failed to claim item',
+        type: 'error',
+      });
     }
   };
 
@@ -33,74 +48,74 @@ const LostAndFoundDetails = () => {
         setToast({ message: 'Item deleted successfully', type: 'success' });
         navigate('/lost-and-found');
       } catch (err) {
-        setToast({ message: err.message || 'Failed to delete item', type: 'error' });
+        setToast({
+          message: err.response?.data?.message || err.message || 'Failed to delete item',
+          type: 'error',
+        });
       }
     }
   };
 
-  if (loading)
+  if (loading || !localItem)
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white">
         Loading...
       </div>
     );
 
-  if (!item)
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white">
-        Item not found
-      </div>
-    );
-
-  const canEditDelete = user._id === item.createdBy._id || user.role === 'admin';
+  const canEditDelete = user._id === localItem.createdBy._id || user.role === 'admin';
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-600 to-purple-600 font-sans text-white">
       <Navbar user={user} logout={logout} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
-        <h2 className="text-3xl font-extrabold text-yellow-300 mb-6">{item.itemName}</h2>
+        <h2 className="text-3xl font-extrabold text-yellow-300 mb-6">{localItem.itemName}</h2>
 
         {error && <Toast message={error} type="error" onClose={() => setToast(null)} />}
 
         <div className="bg-gray-900 bg-opacity-90 rounded-lg shadow-lg p-6">
           <img
-            src={item.image || placeholder}
-            alt={item.itemName}
+            src={localItem.image || placeholder}
+            alt={localItem.itemName}
             className="w-full max-w-md h-64 object-cover rounded-lg mb-4"
           />
           <p className="mb-2">
-            <strong>Status:</strong> {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+            <strong>Status:</strong> {localItem.status.charAt(0).toUpperCase() + localItem.status.slice(1)}
           </p>
           <p className="mb-2">
-            <strong>Description:</strong> {item.description || 'N/A'}
+            <strong>Description:</strong> {localItem.description || 'N/A'}
           </p>
           <p className="mb-2">
-            <strong>Location:</strong> {item.location}
+            <strong>Location:</strong> {localItem.location}
           </p>
           <p className="mb-2">
-            <strong>Date:</strong> {new Date(item.date).toLocaleString()}
+            <strong>Date:</strong> {new Date(localItem.date).toLocaleString()}
           </p>
           <p className="mb-2">
-            <strong>Posted by:</strong> {item.createdBy.name} ({item.createdBy.rollNo})
+            <strong>Posted by:</strong> {localItem.createdBy.name} ({localItem.createdBy.rollNo})
           </p>
-          {item.handoverTo && (
+          {localItem.handoverTo && (
             <p className="mb-2">
-              <strong>Handover To:</strong> {item.handoverTo}
+              <strong>Handover To:</strong> {localItem.handoverTo}
             </p>
           )}
-          {item.handoverLocation && (
+          {localItem.handoverLocation && (
             <p className="mb-2">
-              <strong>Handover Location:</strong> {item.handoverLocation}
+              <strong>Handover Location:</strong> {localItem.handoverLocation}
             </p>
+          )}
+          {localItem.isClaimed ? (
+            <p className="mb-2">
+              <strong>Claimed by:</strong> {localItem.claimant.name} ({localItem.claimant.rollNo})
+            </p>
+          ) : (
+            <Button onClick={handleClaim} className="bg-green-600 hover:bg-green-700">
+              Claim Item
+            </Button>
           )}
 
           <div className="flex flex-wrap gap-4 mt-4">
-            {item.status !== 'claimed' && (
-              <Button onClick={handleClaim} className="bg-green-600 hover:bg-green-700">
-                Claim Item
-              </Button>
-            )}
             {canEditDelete && (
               <>
                 <Link to={`/lost-and-found/${id}/edit`}>
@@ -115,7 +130,7 @@ const LostAndFoundDetails = () => {
 
           <CommentSection
             itemId={id}
-            comments={item.comments}
+            comments={localItem.comments}
             refetch={refetch}
             setToast={setToast}
           />

@@ -29,8 +29,8 @@ const ItemFilter = ({ onFilter }) => {
           value={filters.title}
           onChange={handleChange}
           placeholder="Enter item title"
-          inputClass="bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:border-yellow-400 focus:ring focus:ring-yellow-400/50"
-          labelClass="text-gray-300"
+          inputClass="bg-gray-700 text-black placeholder-gray-400 border border-gray-600 focus:border-yellow-400 focus:ring focus:ring-yellow-400/50"
+          labelClass="text-white"
         />
         <Select
           label="Category"

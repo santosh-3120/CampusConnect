@@ -30,5 +30,24 @@ router.get('/users', authMiddleware, roleMiddleware(['admin']), async (req, res)
     res.status(500).json({ message: 'Error fetching users', error: error.message });
   }
 });
+router.get('/search', authMiddleware, async (req, res) => {
+  try {
+    const query = req.query.query;
+    if (!query) return res.status(400).json([]);
+
+    const users = await User.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { rollNo: { $regex: query, $options: 'i' } },
+      ],
+      _id: { $ne: req.user._id },
+    }).select('_id name rollNo');
+
+    res.status(200).json(users);
+  } catch (err) {
+    console.error('User search error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
 
 module.exports = router;

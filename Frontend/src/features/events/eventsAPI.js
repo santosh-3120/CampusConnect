@@ -2,7 +2,7 @@
 import api from '../../services/api';
 
 // Create event
-export const createEvent = (eventData) => {
+export const createEvent = async (eventData) => {
   const isFormData = eventData instanceof FormData;
   return api
     .post('/events', eventData, {

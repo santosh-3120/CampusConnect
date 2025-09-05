@@ -1,137 +1,122 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+// src/pages/Chats.jsx
+import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import ChatCard from '../components/chats/ChatCard';
-import {Spinner} from '../components/common/Spinner';
-import { formatDate } from '../utils/formatDate';
+import { Link, useNavigate } from 'react-router-dom';
+import ChatSearch from '../components/chats/ChatSearch';
+import ChatListItem from '../components/chats/ChatListItem';
+import SocketService from '../services/SocketService';
+import axios from 'axios';
 
 const Chats = () => {
-  const { user } = useContext(AuthContext);
-  const { id: conversationId } = useParams();
-  const navigate = useNavigate();
-  const [conversations, setConversations] = useState([]);
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { user, loading } = useContext(AuthContext);
+  const [chats, setChats] = useState([]);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchConversations = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get('http://localhost:3000/api/chats', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        setConversations(response.data);
-        if (conversationId) {
-          const conv = response.data.find(c => c._id === conversationId);
-          if (conv) setSelectedConversation(conv);
-        }
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to load conversations');
-        setLoading(false);
+    if (!loading) {
+      if (!user || !user.token) {
+        console.warn('No user or token found, redirecting to login');
+        navigate('/login');
+        return;
       }
-    };
-    fetchConversations();
-  }, [conversationId]);
 
-  useEffect(() => {
-    if (selectedConversation) {
-      const fetchMessages = async () => {
-        try {
-          const response = await axios.get(`http://localhost:3000/api/chats/${selectedConversation._id}/messages`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-          });
-          setMessages(response.data);
-        } catch (err) {
-          setError('Failed to load messages');
+      // Fetch user's chats
+      axios.get('/api/chats', {
+        headers: { Authorization: `Bearer ${user.token}` },
+      })
+      .then((res) => {
+        setChats(res.data);
+        setError(null);
+      })
+      .catch((err) => {
+        console.error('Error fetching chats:', err);
+        setError('Failed to load chats');
+        if (err.response?.status === 401) {
+          navigate('/login');
         }
-      };
-      fetchMessages();
-    }
-  }, [selectedConversation]);
+      });
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !selectedConversation) return;
+      // Initialize Socket.IO and listen for events
+      SocketService.connect(user.token);
+      SocketService.on('newChat', (chat) => {
+        setChats((prev) => [chat, ...prev.filter((c) => c._id !== chat._id)]);
+      });
+      SocketService.on('newMessage', (data) => {
+        setChats((prev) =>
+          prev.map((chat) =>
+            chat._id === data.chatId
+              ? {
+                  ...chat,
+                  messages: [...(chat.messages || []), data.message],
+                  lastMessage: {
+                    text: data.message.text,
+                    createdAt: data.message.createdAt,
+                  },
+                }
+              : chat
+          ).sort(
+            (a, b) =>
+              new Date(b.lastMessage?.createdAt || 0) -
+              new Date(a.lastMessage?.createdAt || 0)
+          )
+        );
+      });
+
+      // Cleanup on unmount
+      return () => SocketService.disconnect();
+    }
+  }, [user, loading, navigate]);
+
+  const handleStartChat = async (recipientId) => {
     try {
-      const response = await axios.post(
-        `http://localhost:3000/api/chats/${selectedConversation._id}/messages`,
-        { text: newMessage },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-      );
-      setMessages([...messages, response.data]);
-      setNewMessage('');
+      const res = await axios.post(`/api/chats/${recipientId}`, {}, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setChats((prev) => [res.data, ...prev.filter((c) => c._id !== res.data._id)]);
+      setError(null);
     } catch (err) {
-      setError('Failed to send message');
+      console.error('Error starting chat:', err);
+      setError('Failed to start chat');
+      if (err.response?.status === 401) navigate('/login');
     }
   };
 
-  if (loading) return <Spinner />;
-  if (error) return <div className="text-red-500 text-center">{error}</div>;
+  if (loading) {
+    return <p className="text-center mt-10 text-white">Loading chats...</p>;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      <div className="w-1/3 bg-white border-r border-gray-200">
-        <h2 className="text-xl font-semibold p-4 border-b border-gray-200">Conversations</h2>
-        {conversations.length === 0 ? (
-          <p className="p-4 text-gray-600">No conversations yet</p>
-        ) : (
-          conversations.map((conv) => (
-            <ChatCard
-              key={conv._id}
-              conversation={conv}
-              onClick={() => {
-                setSelectedConversation(conv);
-                navigate(`/chats/${conv._id}`);
-              }}
-              isSelected={selectedConversation?._id === conv._id}
-            />
-          ))
-        )}
-      </div>
-      <div className="w-2/3 flex flex-col">
-        {selectedConversation ? (
-          <>
-            <div className="flex-1 p-4 overflow-y-auto">
-              {messages.map((msg) => (
-                <div
-                  key={msg._id}
-                  className={`mb-4 flex ${msg.sender._id === user._id ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-xs p-3 rounded-lg ${
-                      msg.sender._id === user._id ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'
-                    }`}
-                  >
-                    <p>{msg.text}</p>
-                    <p className="text-xs mt-1 opacity-70">{formatDate(msg.createdAt)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
-              <div className="flex">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="input-field flex-1"
-                />
-                <button type="submit" className="btn-primary ml-2">Send</button>
-              </div>
-            </form>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-gray-600">Select a conversation to start chatting</p>
-          </div>
-        )}
-      </div>
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-600 to-purple-600 font-sans text-white">
+      <nav className="bg-gray-900 bg-opacity-90 shadow-lg p-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold">CampusConnect Chats</h1>
+          <Link to="/dashboard" className="hover:text-yellow-300">
+            Back to Dashboard
+          </Link>
+        </div>
+      </nav>
+
+      <main className="flex-grow max-w-7xl mx-auto px-4 py-8">
+        <ChatSearch onStartChat={handleStartChat} />
+        <h2 className="text-3xl font-extrabold mb-6 text-yellow-300">Your Chats</h2>
+        {error && <p className="text-red-400 mb-4">{error}</p>}
+        <div className="space-y-4">
+          {chats.length === 0 ? (
+            <p className="text-gray-300">No chats yet. Start one above!</p>
+          ) : (
+            chats.map((chat) => (
+              <ChatListItem key={chat._id} chat={chat} currentUserId={user._id} />
+            ))
+          )}
+        </div>
+      </main>
+
+      <footer className="bg-gray-900 p-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <p>© 2025 CampusConnect. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 };

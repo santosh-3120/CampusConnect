@@ -17,6 +17,7 @@ export const useEvents = () => {
 
   const loadEvents = useCallback(async () => {
     setLoading(true);
+    console.log(events)
     try {
       const data = await getAllEvents();
       setEvents(data);

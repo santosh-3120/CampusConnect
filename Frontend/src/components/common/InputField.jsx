@@ -1,7 +1,7 @@
 const InputField = ({ label, id, name, value, onChange, type = 'text', required, placeholder }) => {
     return (
       <div className="mb-4">
-        <label htmlFor={id} className="block text-gray-700 mb-2">
+        <label htmlFor={id} className="block text-gray-200 mb-2">
           {label}
         </label>
         <input
