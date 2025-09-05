@@ -84,14 +84,16 @@ const Dashboard = () => {
             <h3 className="text-xl font-semibold mb-2">Messages</h3>
             <p>Connect with your peers.</p>
           </Link>
-          <Link
-            to="/jobs"
+          <a
+            href="https://www.indeed.com" // change to preferred job portal URL
+            target="_blank"
+            rel="noopener noreferrer"
             className="bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition transform hover:scale-105"
           >
             <FaChartLine className="text-3xl text-teal-400 mb-4" />
             <h3 className="text-xl font-semibold mb-2">Jobs</h3>
             <p>Explore career opportunities.</p>
-          </Link>
+          </a>
         </div>
       </main>
 
